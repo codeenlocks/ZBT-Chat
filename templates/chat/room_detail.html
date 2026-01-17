@@ -13,11 +13,13 @@
 
     <div class="sticky-bottom bg-light p-3 border-top rounded shadow">
         <form id="message-form">
-            {% csrf_token %} <input type="hidden" id="room_id" value="{{ room.id }}"> <div class="input-group shadow-sm">
+            {% csrf_token %}
+            <input type="hidden" id="room_id" value="{{ room.id }}">
+            <div class="input-group shadow-sm">
                 <input type="text" id="msg-content" class="form-control border-0 p-3" 
                        placeholder="Écrivez votre message ici..." required autocomplete="off">
                 <button type="submit" class="btn btn-primary px-4">
-                    Envoyer
+                    <i class="bi bi-send"></i> Envoyer
                 </button>
             </div>
         </form>
@@ -29,8 +31,8 @@
 <script>
     let lastMessageId = 0;
 
+    // Fonction pour récupérer les nouveaux messages
     function fetchMessages() {
-        // On récupère le token pour le bouton signalement si besoin
         let csrfToken = $('input[name=csrfmiddlewaretoken]').val();
 
         $.ajax({
@@ -40,6 +42,17 @@
                 data.messages.forEach(msg => {
                     let firstLetter = msg.user.charAt(0).toUpperCase();
                     
+                    // On vérifie si le message est déjà signalé pour afficher le badge directement
+                    let flagButton = msg.is_flagged ? 
+                        `<span class="badge rounded-pill bg-danger" style="font-size: 0.6rem;">Signalé</span>` :
+                        `<form class="d-inline flag-form" data-msg-id="${msg.id}">
+                            <input type="hidden" name="csrfmiddlewaretoken" value="${csrfToken}">
+                            <button type="submit" class="btn btn-link btn-sm p-0 text-decoration-none text-warning" style="font-size: 0.7rem;">
+                                🚩 Signaler
+                            </button>
+                            <span class="badge rounded-pill bg-danger d-none" id="flag-badge-${msg.id}" style="font-size: 0.6rem;">Signalé</span>
+                        </form>`;
+
                     let messageHtml = `
                         <div class="d-flex mb-4">
                             <div class="avatar bg-primary text-white rounded-circle d-flex align-items-center justify-content-center shadow-sm" 
@@ -55,12 +68,7 @@
                                     <p class="mb-0 text-secondary">${msg.content}</p>
                                 </div>
                                 <div class="mt-1">
-                                    <form action="/flag/${msg.id}/" method="post" class="d-inline">
-                                        <input type="hidden" name="csrfmiddlewaretoken" value="${csrfToken}">
-                                        <button type="submit" class="btn btn-link btn-sm p-0 text-decoration-none text-warning" style="font-size: 0.7rem;">
-                                            🚩 Signaler
-                                        </button>
-                                    </form>
+                                    ${flagButton}
                                 </div>
                             </div>
                         </div>`;
@@ -78,15 +86,13 @@
     }
 
     $(document).ready(function() {
-        // Charger les messages au démarrage
+        // Chargement initial et rafraîchissement auto
         fetchMessages();
-        
-        // Rafraîchissement auto
         setInterval(fetchMessages, 3000);
 
+        // --- ENVOI DE MESSAGE (AJAX) ---
         $('#message-form').on('submit', function(e) {
             e.preventDefault();
-
             let content = $('#msg-content').val();
             let roomId = $('#room_id').val();
             let csrfToken = $('input[name=csrfmiddlewaretoken]').val();
@@ -102,12 +108,31 @@
                 success: function(response) {
                     if (response.status === 'success') {
                         $('#msg-content').val('');
-                        fetchMessages(); // Refresh immédiat
+                        fetchMessages(); // Récupération immédiate
                     }
+                }
+            });
+        });
+
+        // --- SIGNALEMENT DE MESSAGE (AJAX) ---
+        // On utilise $(document).on car les formulaires sont créés dynamiquement par le JS
+        $(document).on('submit', '.flag-form', function(e) {
+            e.preventDefault();
+            let form = $(this);
+            let msgId = form.data('msg-id');
+            let csrfToken = form.find('input[name=csrfmiddlewaretoken]').val();
+
+            $.ajax({
+                url: `/flag/${msgId}/`,
+                type: "POST",
+                data: { 'csrfmiddlewaretoken': csrfToken },
+                success: function() {
+                    // Cache le bouton 🚩 et affiche le badge "Signalé"
+                    form.find('button').addClass('d-none');
+                    form.find('.badge').removeClass('d-none');
                 },
-                error: function(xhr) {
-                    console.log(xhr.responseText); // Pour voir l'erreur précise dans F12
-                    alert("Erreur lors de l'envoi.");
+                error: function() {
+                    alert("Erreur lors du signalement.");
                 }
             });
         });

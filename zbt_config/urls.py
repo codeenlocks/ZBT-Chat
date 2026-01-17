@@ -23,6 +23,8 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('accounts/', include('django.contrib.auth.urls')),
     path('create-room/', views.create_room, name='create_room'),
+    path('delete-room/<slug:slug>/', views.delete_room, name='delete_room'),
+    path('flag/<int:message_id>/', views.flag_message, name='flag_message'),
     path('', views.index, name='index'),
     path('', include('chat.urls')),
 ]

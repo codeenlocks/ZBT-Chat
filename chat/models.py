@@ -1,13 +1,16 @@
 from django.db import models
 from django.contrib.auth.models import User
 
-class Room(models.Model):
-    name = models.CharField(max_length=100, unique=True)
-    slug = models.SlugField(unique=True)
-    description = models.TextField(blank=True)
 
-    def __str__(self):
+class Room(models.Model):
+    name = models.CharField(max_length=255)
+    slug = models.SlugField(unique=True)
+    # On lie le salon à l'utilisateur qui le crée
+    creator = models.ForeignKey(User, on_delete=models.CASCADE, related_name='created_rooms', null=True, blank=True)
+    
+    def __clstr__(self):
         return self.name
+
 
 class Message(models.Model):
     room = models.ForeignKey(Room, on_delete=models.CASCADE, related_name="messages")

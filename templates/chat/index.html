@@ -7,7 +7,6 @@
             <h1 class="fw-bold mb-0">ZBT <span class="text-primary">Chat</span></h1>
             <p class="text-muted mb-0">Bonjour {{ user.username }}, choisissez ou créez un espace.</p>
         </div>
-        
         <a href="{% url 'create_room' %}" class="btn btn-primary rounded-pill shadow-sm px-4 py-2">
             <i class="bi bi-plus-lg"></i> + Créer un salon
         </a>
@@ -16,7 +15,19 @@
     <div class="row g-4 justify-content-center">
         {% for room in rooms %}
         <div class="col-md-4 col-sm-6">
-            <div class="card h-100 border-0 shadow-sm custom-card" style="cursor: pointer;" onclick="location.href='{% url 'room_detail' room.slug %}'">
+            <div class="card h-100 border-0 shadow-sm custom-card position-relative" style="cursor: pointer;" onclick="location.href='{% url 'room_detail' room.slug %}'">
+                
+                {% if room.creator == user or user.is_staff %}
+                <div class="position-absolute top-0 end-0 m-2" style="z-index: 10;">
+                    <form action="{% url 'delete_room' room.slug %}" method="post" onsubmit="return confirm('Supprimer ce salon définitivement ?');">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-link text-danger p-0 border-0 bg-transparent" onclick="event.stopPropagation();">
+                             <i class="bi bi-trash"></i> 🗑️
+                        </button>
+                    </form>
+                </div>
+                {% endif %}
+
                 <div class="card-body text-center p-4">
                     <div class="room-icon mb-3 mx-auto bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
                         <span class="fs-3 fw-bold">#</span>
@@ -42,7 +53,6 @@
 </div>
 
 <style>
-    /* Effet de survol sur les cartes */
     .custom-card {
         transition: transform 0.3s ease, box-shadow 0.3s ease;
         border-radius: 15px;
@@ -57,6 +67,11 @@
     .custom-card:hover .room-icon {
         background-color: var(--bs-primary) !important;
         color: white !important;
+    }
+    /* Style pour la poubelle au survol */
+    .btn-link:hover {
+        transform: scale(1.2);
+        transition: transform 0.2s;
     }
 </style>
 {% endblock %}

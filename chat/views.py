@@ -93,3 +93,11 @@ def create_room(request):
     else:
         form = RoomForm()
     return render(request, 'chat/create_room.html', {'form': form})
+
+@login_required
+def delete_room(request, slug):
+    room = get_object_or_404(Room, slug=slug)
+    # On vérifie que c'est bien le créateur ou l'admin
+    if room.creator == request.user or request.user.is_staff:
+        room.delete()
+    return redirect('index')
