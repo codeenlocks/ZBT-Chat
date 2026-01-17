@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h2>Salon : {{ room.name }}</h2>
+
+<div id="chat-box" class="border p-3 mb-3" style="height: 300px; overflow-y: scroll; background: white;">
+    {% for message in messages %}
+        <p><strong>{{ message.user.username }}</strong>: {{ message.content }} <small>({{ message.timestamp|date:"H:i" }})</small></p>
+    {% endfor %}
+</div>
+
+<form id="message-form">
+    {% csrf_token %}
+    <input type="hidden" id="room_id" value="{{ room.id }}">
+    <div class="input-group">
+        <input type="text" id="msg-content" class="form-control" placeholder="Écrivez votre message..." required>
+        <button type="submit" class="btn btn-primary">Envoyer</button>
+    </div>
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    $(document).ready(function() {
+        $('#message-form').on('submit', function(e) {
+            e.preventDefault(); // Empêche le rechargement de la page
+
+            let content = $('#msg-content').val();
+            let roomId = $('#room_id').val();
+            let csrfToken = $('input[name=csrfmiddlewaretoken]').val();
+
+            $.ajax({
+                url: "{% url 'send_message' %}",
+                type: "POST",
+                data: {
+                    'content': content,
+                    'room_id': roomId,
+                    'csrfmiddlewaretoken': csrfToken
+                },
+                success: function(response) {
+                    if (response.status === 'success') {
+                        // On ajoute le message en bas de la liste instantanément
+                        $('#chat-box').append(
+                            '<p><strong>' + response.user + '</strong>: ' + response.content + ' <small>(' + response.timestamp + ')</small></p>'
+                        );
+                        $('#msg-content').val(''); // On vide le champ
+                        // Scroll automatique vers le bas
+                        $('#chat-box').scrollTop($('#chat-box')[0].scrollHeight);
+                    }
+                },
+                error: function() {
+                    alert("Erreur lors de l'envoi du message.");
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}
