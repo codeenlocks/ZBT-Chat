@@ -55,11 +55,19 @@
                 },
                 success: function(response) {
                     if (response.status === 'success') {
+
+                        let flagForm = `
+                            <form action="/flag/${response.message_id}/" method="post" class="d-inline ms-2">
+                                <input type="hidden" name="csrfmiddlewaretoken" value="${csrfToken}">
+                                <button type="submit" class="btn btn-sm btn-outline-warning py-0" style="font-size: 0.7rem;">
+                                    🚩 Signaler
+                                </button>
+                            </form>`;
                         // On ajoute le nouveau message
                         // Note : Le nouveau message n'aura pas de bouton "Signaler" 
                         // tant que la page n'est pas rafraîchie (c'est normal pour l'instant)
                         $('#chat-box').append(
-                            '<div class="message mb-2"><strong>' + response.user + '</strong>: ' + response.content + ' <small class="text-muted">(' + response.timestamp + ')</small></div>'
+                            '<div class="message mb-2"><strong>' + response.user + '</strong>: ' + response.content + ' <small class="text-muted">(' + response.timestamp + ')</small>' + flagForm +'</div>'
                         );
                         $('#msg-content').val('');
                         $('#chat-box').scrollTop($('#chat-box')[0].scrollHeight);

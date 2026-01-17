@@ -41,6 +41,7 @@ def send_message(request):
             )
             return JsonResponse({
                 'status': 'success',
+                'message_id': new_message.id,
                 'user': new_message.user.username,
                 'content': new_message.content,
                 'timestamp': new_message.timestamp.strftime('%H:%M')
