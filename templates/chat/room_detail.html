@@ -1,0 +1,14 @@
+
+<!-- à placer à coté de chaque message, pour eventuelement le signaler--> 
+{% if user.is_authenticated %}
+    <form action="{% url 'flag_message' message.id %}" method="post" class="d-inline ms-2">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-sm btn-outline-warning" title="Signaler ce message">
+        🚩 Signaler
+        </button>
+    </form>
+{% endif %}
+
+{% if message.is_flagged %}
+    <span class="badge bg-danger">Signalé</span>
+{% endif %}
