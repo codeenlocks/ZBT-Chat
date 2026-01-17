@@ -81,6 +81,8 @@
     });
     function fetchMessages() {
         let roomId = $('#room_id').val();
+        let csrfToken = $('input[name=csrfmiddlewaretoken]').val(); // On récupère le token présent sur la page
+
         $.ajax({
             url: "/get_messages/" + roomId + "/",
             type: "GET",
@@ -89,9 +91,18 @@
                 $('#chat-box').empty();
                 response.messages.forEach(function(msg) {
                     let flaggedBadge = msg.is_flagged ? ' <span class="badge bg-danger">Signalé</span>' : '';
+
+                    let flagButton = `
+                    <form action="/flag/${msg.id}/" method="post" class="d-inline ms-2">
+                        <input type="hidden" name="csrfmiddlewaretoken" value="${csrfToken}">
+                        <button type="submit" class="btn btn-sm btn-outline-warning py-0" style="font-size: 0.7rem;">
+                            🚩 Signaler
+                        </button>
+                    </form>`;
+
                     $('#chat-box').append(
                         '<div class="message mb-2"><strong>' + msg.user + '</strong>: ' + msg.content + 
-                        ' <small class="text-muted">(' + msg.timestamp + ')</small>' + flaggedBadge + '</div>'
+                        ' <small class="text-muted">(' + msg.timestamp + ')</small>' + flagButton + flaggedBadge + '</div>'
                     );
                 });
             }

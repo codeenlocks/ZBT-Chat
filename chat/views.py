@@ -64,6 +64,7 @@ def get_messages(request, room_id):
     results = []
     for msg in reversed(messages):
         results.append({
+            'id': msg.id,
             'user': msg.user.username,
             'content': msg.content,
             'timestamp': msg.timestamp.strftime('%H:%M'),
