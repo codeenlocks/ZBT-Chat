@@ -55,22 +55,8 @@
                 },
                 success: function(response) {
                     if (response.status === 'success') {
-
-                        let flagForm = `
-                            <form action="/flag/${response.message_id}/" method="post" class="d-inline ms-2">
-                                <input type="hidden" name="csrfmiddlewaretoken" value="${csrfToken}">
-                                <button type="submit" class="btn btn-sm btn-outline-warning py-0" style="font-size: 0.7rem;">
-                                    🚩 Signaler
-                                </button>
-                            </form>`;
-                        // On ajoute le nouveau message
-                        // Note : Le nouveau message n'aura pas de bouton "Signaler" 
-                        // tant que la page n'est pas rafraîchie (c'est normal pour l'instant)
-                        $('#chat-box').append(
-                            '<div class="message mb-2"><strong>' + response.user + '</strong>: ' + response.content + ' <small class="text-muted">(' + response.timestamp + ')</small>' + flagForm +'</div>'
-                        );
                         $('#msg-content').val('');
-                        $('#chat-box').scrollTop($('#chat-box')[0].scrollHeight);
+                        fetchMessages(); // On appelle la fonction tout de suite au lieu d'attendre 3s
                     }
                 },
                 error: function() {
@@ -79,32 +65,45 @@
             });
         });
     });
+    let lastMessageId = 0; // Au début, on n'a rien
+
     function fetchMessages() {
-        let roomId = $('#room_id').val();
-        let csrfToken = $('input[name=csrfmiddlewaretoken]').val(); // On récupère le token présent sur la page
+        let csrfToken = $('input[name=csrfmiddlewaretoken]').val();
 
         $.ajax({
-            url: "/get_messages/" + roomId + "/",
-            type: "GET",
-            success: function(response) {
-                // On vide la boîte de chat et on la remplit avec les messages frais
-                $('#chat-box').empty();
-                response.messages.forEach(function(msg) {
-                    let flaggedBadge = msg.is_flagged ? ' <span class="badge bg-danger">Signalé</span>' : '';
+            url: `/get_messages/{{ room.id }}/?last_id=${lastMessageId}`,
+            method: 'GET',
+            success: function(data) {
+                data.messages.forEach(msg => {
+                    // 1. On prépare le bouton de signalement (le travail de Becker)
+                    let flagForm = `
+                        <form action="/flag/${msg.id}/" method="post" class="d-inline ms-2">
+                            <input type="hidden" name="csrfmiddlewaretoken" value="${csrfToken}">
+                            <button type="submit" class="btn btn-sm btn-outline-warning py-0" style="font-size: 0.7rem;" title="Signaler ce message">
+                                🚩 Signaler
+                            </button>
+                        </form>`;
 
-                    let flagButton = `
-                    <form action="/flag/${msg.id}/" method="post" class="d-inline ms-2">
-                        <input type="hidden" name="csrfmiddlewaretoken" value="${csrfToken}">
-                        <button type="submit" class="btn btn-sm btn-outline-warning py-0" style="font-size: 0.7rem;">
-                            🚩 Signaler
-                        </button>
-                    </form>`;
+                    // 2. On construit le message avec EXACTEMENT le même HTML que le template Django
+                    let messageHtml = `
+                        <div class="message mb-2">
+                            <strong>${msg.user}</strong>: ${msg.content} 
+                            <small class="text-muted">(${msg.timestamp})</small>
+                            ${flagForm}
+                            ${msg.is_flagged ? '<span class="badge bg-danger">Signalé</span>' : ''}
+                        </div>`;
 
-                    $('#chat-box').append(
-                        '<div class="message mb-2"><strong>' + msg.user + '</strong>: ' + msg.content + 
-                        ' <small class="text-muted">(' + msg.timestamp + ')</small>' + flagButton + flaggedBadge + '</div>'
-                    );
+                    // 3. On injecte dans le chat-box
+                    $('#chat-box').append(messageHtml);
+                    
+                    // On met à jour l'ID pour ne pas récupérer deux fois le même
+                    lastMessageId = msg.id;
                 });
+                
+                if (data.messages.length > 0) {
+                    var chatBox = document.getElementById("chat-box");
+                    chatBox.scrollTop = chatBox.scrollHeight;
+                }
             }
         });
     }

@@ -59,19 +59,22 @@ def flag_message(request, message_id):
     return redirect('signup')
 
 def get_messages(request, room_id):
-    # On récupère les 20 derniers messages du salon
-    messages = Message.objects.filter(room_id=room_id).order_by('-timestamp')[:20]
+    # On récupère l'ID du dernier message que le navigateur possède déjà
+    last_id = request.GET.get('last_id', 0)
+    
+    # On ne filtre que les messages de cette room dont l'ID est supérieur au dernier reçu
+    messages = Message.objects.filter(room_id=room_id, id__gt=last_id).order_by('timestamp')
+    
     results = []
-    for msg in reversed(messages):
+    for m in messages:
         results.append({
-            'id': msg.id,
-            'user': msg.user.username,
-            'content': msg.content,
-            'timestamp': msg.timestamp.strftime('%H:%M'),
-            'is_flagged': msg.is_flagged
+            'id': m.id, # Crucial pour le prochain appel !
+            'user': m.user.username,
+            'content': m.content,
+            'timestamp': m.timestamp.strftime('%H:%M')
         })
+    
     return JsonResponse({'messages': results})
-
 
 @login_required
 def index(request):
