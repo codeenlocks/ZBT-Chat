@@ -71,5 +71,26 @@
             });
         });
     });
+    function fetchMessages() {
+        let roomId = $('#room_id').val();
+        $.ajax({
+            url: "/get_messages/" + roomId + "/",
+            type: "GET",
+            success: function(response) {
+                // On vide la boîte de chat et on la remplit avec les messages frais
+                $('#chat-box').empty();
+                response.messages.forEach(function(msg) {
+                    let flaggedBadge = msg.is_flagged ? ' <span class="badge bg-danger">Signalé</span>' : '';
+                    $('#chat-box').append(
+                        '<div class="message mb-2"><strong>' + msg.user + '</strong>: ' + msg.content + 
+                        ' <small class="text-muted">(' + msg.timestamp + ')</small>' + flaggedBadge + '</div>'
+                    );
+                });
+            }
+        });
+    }
+
+    // On appelle la fonction toutes les 3 secondes
+    setInterval(fetchMessages, 3000);
 </script>
 {% endblock %}

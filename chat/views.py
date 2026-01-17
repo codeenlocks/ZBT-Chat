@@ -56,3 +56,16 @@ def flag_message(request, message_id):
         message.save()
         return redirect('room_detail', slug=message.room.slug)
     return redirect('signup')
+
+def get_messages(request, room_id):
+    # On récupère les 20 derniers messages du salon
+    messages = Message.objects.filter(room_id=room_id).order_by('-timestamp')[:20]
+    results = []
+    for msg in reversed(messages):
+        results.append({
+            'user': msg.user.username,
+            'content': msg.content,
+            'timestamp': msg.timestamp.strftime('%H:%M'),
+            'is_flagged': msg.is_flagged
+        })
+    return JsonResponse({'messages': results})
