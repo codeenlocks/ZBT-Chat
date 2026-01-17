@@ -71,3 +71,9 @@ def get_messages(request, room_id):
             'is_flagged': msg.is_flagged
         })
     return JsonResponse({'messages': results})
+
+
+@login_required
+def index(request):
+    rooms = Room.objects.all()
+    return render(request, 'chat/index.html', {'rooms': rooms})
