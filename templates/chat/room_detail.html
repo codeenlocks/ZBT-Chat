@@ -5,7 +5,23 @@
 
 <div id="chat-box" class="border p-3 mb-3" style="height: 300px; overflow-y: scroll; background: white;">
     {% for message in messages %}
-        <p><strong>{{ message.user.username }}</strong>: {{ message.content }} <small>({{ message.timestamp|date:"H:i" }})</small></p>
+        <div class="message mb-2">
+            <strong>{{ message.user.username }}</strong>: {{ message.content }} 
+            <small class="text-muted">({{ message.timestamp|date:"H:i" }})</small>
+
+            {% if user.is_authenticated %}
+                <form action="{% url 'flag_message' message.id %}" method="post" class="d-inline ms-2">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-sm btn-outline-warning py-0" style="font-size: 0.7rem;" title="Signaler ce message">
+                        🚩 Signaler
+                    </button>
+                </form>
+            {% endif %}
+
+            {% if message.is_flagged %}
+                <span class="badge bg-danger">Signalé</span>
+            {% endif %}
+        </div>
     {% endfor %}
 </div>
 
@@ -23,7 +39,7 @@
 <script>
     $(document).ready(function() {
         $('#message-form').on('submit', function(e) {
-            e.preventDefault(); // Empêche le rechargement de la page
+            e.preventDefault();
 
             let content = $('#msg-content').val();
             let roomId = $('#room_id').val();
@@ -39,12 +55,13 @@
                 },
                 success: function(response) {
                     if (response.status === 'success') {
-                        // On ajoute le message en bas de la liste instantanément
+                        // On ajoute le nouveau message
+                        // Note : Le nouveau message n'aura pas de bouton "Signaler" 
+                        // tant que la page n'est pas rafraîchie (c'est normal pour l'instant)
                         $('#chat-box').append(
-                            '<p><strong>' + response.user + '</strong>: ' + response.content + ' <small>(' + response.timestamp + ')</small></p>'
+                            '<div class="message mb-2"><strong>' + response.user + '</strong>: ' + response.content + ' <small class="text-muted">(' + response.timestamp + ')</small></div>'
                         );
-                        $('#msg-content').val(''); // On vide le champ
-                        // Scroll automatique vers le bas
+                        $('#msg-content').val('');
                         $('#chat-box').scrollTop($('#chat-box')[0].scrollHeight);
                     }
                 },

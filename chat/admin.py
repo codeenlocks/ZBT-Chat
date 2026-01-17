@@ -1,9 +1,13 @@
-from django.db import models
 from django.contrib import admin
 from .models import Room, Message
 
 @admin.register(Room)
 class RoomAdmin(admin.ModelAdmin):
-    prepopulated_fields = {'slug': ('name',)} # Remplit le slug automatiquement
+    list_display = ('name', 'slug')
+    prepopulated_fields = {'slug': ('name',)}
 
-admin.site.register(Message)
+@admin.register(Message)
+class MessageAdmin(admin.ModelAdmin):
+    list_display = ('user', 'room', 'timestamp', 'is_flagged') # On garde is_flagged pour Becker
+    list_filter = ('is_flagged', 'room', 'timestamp')
+    search_fields = ('content', 'user__username')
