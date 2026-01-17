@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <a href="{% url 'index' %}" class="text-decoration-none mb-3 d-inline-block text-muted">
+                ← Retour à l'accueil
+            </a>
+
+            <div class="card shadow border-0 p-4">
+                <h2 class="fw-bold mb-4 text-center">Nouveau Salon</h2>
+                
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    {% if form.errors %}
+                        <div class="alert alert-danger">
+                            {{ form.errors }}
+                        </div>
+                    {% endif %}
+
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">Comment s'appelle l'espace ?</label>
+                        {{ form.name }}
+                    </div>
+
+                    <input type="hidden" name="slug" id="id_slug">
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary btn-lg rounded-pill shadow-sm">
+                            Lancer le salon
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const nameInput = document.querySelector('input[name="name"]');
+        const slugInput = document.getElementById('id_slug');
+
+        nameInput.addEventListener('keyup', function() {
+            let slug = nameInput.value.toLowerCase()
+                .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+                .replace(/[^\w ]+/g, '')
+                .replace(/ +/g, '-');
+            slugInput.value = slug;
+        });
+    });
+</script>
+{% endblock %}

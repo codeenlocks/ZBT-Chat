@@ -22,6 +22,7 @@ from chat import views
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('accounts/', include('django.contrib.auth.urls')),
+    path('create-room/', views.create_room, name='create_room'),
     path('', views.index, name='index'),
-    path('', include('chat.urls')), 
+    path('', include('chat.urls')),
 ]

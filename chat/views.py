@@ -2,8 +2,9 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import login
 from django.http import JsonResponse
-from .forms import SignupForm
+from .forms import SignupForm, RoomForm
 from .models import Room, Message
+
 
 def signup(request):
     if request.method == "POST":
@@ -80,3 +81,15 @@ def get_messages(request, room_id):
 def index(request):
     rooms = Room.objects.all()
     return render(request, 'chat/index.html', {'rooms': rooms})
+
+
+@login_required
+def create_room(request):
+    if request.method == 'POST':
+        form = RoomForm(request.POST)
+        if form.is_valid():
+            form.save()
+            return redirect('index') # <--- Renvoie à l'accueil automatiquement
+    else:
+        form = RoomForm()
+    return render(request, 'chat/create_room.html', {'form': form})

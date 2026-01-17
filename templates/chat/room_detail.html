@@ -1,43 +1,89 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<h2>Salon : {{ room.name }}</h2>
-
-<div id="chat-box" class="border p-3 mb-3" style="height: 300px; overflow-y: scroll; background: white;">
-    {% for message in messages %}
-        <div class="message mb-2">
-            <strong>{{ message.user.username }}</strong>: {{ message.content }} 
-            <small class="text-muted">({{ message.timestamp|date:"H:i" }})</small>
-
-            {% if user.is_authenticated %}
-                <form action="{% url 'flag_message' message.id %}" method="post" class="d-inline ms-2">
-                    {% csrf_token %}
-                    <button type="submit" class="btn btn-sm btn-outline-warning py-0" style="font-size: 0.7rem;" title="Signaler ce message">
-                        🚩 Signaler
-                    </button>
-                </form>
-            {% endif %}
-
-            {% if message.is_flagged %}
-                <span class="badge bg-danger">Signalé</span>
-            {% endif %}
-        </div>
-    {% endfor %}
-</div>
-
-<form id="message-form">
-    {% csrf_token %}
-    <input type="hidden" id="room_id" value="{{ room.id }}">
-    <div class="input-group">
-        <input type="text" id="msg-content" class="form-control" placeholder="Écrivez votre message..." required>
-        <button type="submit" class="btn btn-primary">Envoyer</button>
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2>Salon : <span class="text-primary">{{ room.name }}</span></h2>
+        <a href="{% url 'index' %}" class="btn btn-outline-secondary btn-sm">← Retour aux salons</a>
     </div>
-</form>
+
+    <div id="chat-box" class="border rounded shadow-sm p-4 mb-3" 
+         style="height: 500px; overflow-y: scroll; background-color: #f8f9fa;">
+        </div>
+
+    <div class="sticky-bottom bg-light p-3 border-top rounded shadow">
+        <form id="message-form">
+            {% csrf_token %} <input type="hidden" id="room_id" value="{{ room.id }}"> <div class="input-group shadow-sm">
+                <input type="text" id="msg-content" class="form-control border-0 p-3" 
+                       placeholder="Écrivez votre message ici..." required autocomplete="off">
+                <button type="submit" class="btn btn-primary px-4">
+                    Envoyer
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
 {% endblock %}
 
 {% block extra_js %}
 <script>
+    let lastMessageId = 0;
+
+    function fetchMessages() {
+        // On récupère le token pour le bouton signalement si besoin
+        let csrfToken = $('input[name=csrfmiddlewaretoken]').val();
+
+        $.ajax({
+            url: `/get_messages/{{ room.id }}/?last_id=${lastMessageId}`,
+            method: 'GET',
+            success: function(data) {
+                data.messages.forEach(msg => {
+                    let firstLetter = msg.user.charAt(0).toUpperCase();
+                    
+                    let messageHtml = `
+                        <div class="d-flex mb-4">
+                            <div class="avatar bg-primary text-white rounded-circle d-flex align-items-center justify-content-center shadow-sm" 
+                                style="width: 40px; height: 40px; min-width: 40px; font-weight: bold;">
+                                ${firstLetter}
+                            </div>
+                            <div class="ms-3 flex-grow-1">
+                                <div class="d-flex align-items-baseline">
+                                    <h6 class="fw-bold mb-0 me-2 text-dark">${msg.user}</h6>
+                                    <small class="text-muted" style="font-size: 0.7rem;">${msg.timestamp}</small>
+                                </div>
+                                <div class="bg-white p-2 mt-1 rounded-3 shadow-sm border" style="display: inline-block; max-width: 80%;">
+                                    <p class="mb-0 text-secondary">${msg.content}</p>
+                                </div>
+                                <div class="mt-1">
+                                    <form action="/flag/${msg.id}/" method="post" class="d-inline">
+                                        <input type="hidden" name="csrfmiddlewaretoken" value="${csrfToken}">
+                                        <button type="submit" class="btn btn-link btn-sm p-0 text-decoration-none text-warning" style="font-size: 0.7rem;">
+                                            🚩 Signaler
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>`;
+                    
+                    $('#chat-box').append(messageHtml);
+                    lastMessageId = msg.id;
+                });
+                
+                if (data.messages.length > 0) {
+                    let chatBox = document.getElementById("chat-box");
+                    chatBox.scrollTop = chatBox.scrollHeight;
+                }
+            }
+        });
+    }
+
     $(document).ready(function() {
+        // Charger les messages au démarrage
+        fetchMessages();
+        
+        // Rafraîchissement auto
+        setInterval(fetchMessages, 3000);
+
         $('#message-form').on('submit', function(e) {
             e.preventDefault();
 
@@ -56,59 +102,15 @@
                 success: function(response) {
                     if (response.status === 'success') {
                         $('#msg-content').val('');
-                        fetchMessages(); // On appelle la fonction tout de suite au lieu d'attendre 3s
+                        fetchMessages(); // Refresh immédiat
                     }
                 },
-                error: function() {
-                    alert("Erreur lors de l'envoi du message.");
+                error: function(xhr) {
+                    console.log(xhr.responseText); // Pour voir l'erreur précise dans F12
+                    alert("Erreur lors de l'envoi.");
                 }
             });
         });
     });
-    let lastMessageId = 0; // Au début, on n'a rien
-
-    function fetchMessages() {
-        let csrfToken = $('input[name=csrfmiddlewaretoken]').val();
-
-        $.ajax({
-            url: `/get_messages/{{ room.id }}/?last_id=${lastMessageId}`,
-            method: 'GET',
-            success: function(data) {
-                data.messages.forEach(msg => {
-                    // 1. On prépare le bouton de signalement (le travail de Becker)
-                    let flagForm = `
-                        <form action="/flag/${msg.id}/" method="post" class="d-inline ms-2">
-                            <input type="hidden" name="csrfmiddlewaretoken" value="${csrfToken}">
-                            <button type="submit" class="btn btn-sm btn-outline-warning py-0" style="font-size: 0.7rem;" title="Signaler ce message">
-                                🚩 Signaler
-                            </button>
-                        </form>`;
-
-                    // 2. On construit le message avec EXACTEMENT le même HTML que le template Django
-                    let messageHtml = `
-                        <div class="message mb-2">
-                            <strong>${msg.user}</strong>: ${msg.content} 
-                            <small class="text-muted">(${msg.timestamp})</small>
-                            ${flagForm}
-                            ${msg.is_flagged ? '<span class="badge bg-danger">Signalé</span>' : ''}
-                        </div>`;
-
-                    // 3. On injecte dans le chat-box
-                    $('#chat-box').append(messageHtml);
-                    
-                    // On met à jour l'ID pour ne pas récupérer deux fois le même
-                    lastMessageId = msg.id;
-                });
-                
-                if (data.messages.length > 0) {
-                    var chatBox = document.getElementById("chat-box");
-                    chatBox.scrollTop = chatBox.scrollHeight;
-                }
-            }
-        });
-    }
-
-    // On appelle la fonction toutes les 3 secondes
-    setInterval(fetchMessages, 3000);
 </script>
 {% endblock %}
