@@ -8,4 +8,5 @@ urlpatterns = [
     path('room/<slug:slug>/', views.room_detail, name='room_detail'),
     path('flag/<int:message_id>/', views.flag_message, name='flag_message'),
     path('logout/', auth_views.LogoutView.as_view(), name='logout'),
+    path('get_messages/<int:room_id>/', views.get_messages, name='get_messages'),
 ]

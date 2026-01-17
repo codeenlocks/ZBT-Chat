@@ -100,7 +100,7 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 LOGOUT_REDIRECT_URL = 'signup'  # login page redirection after login out
-
+ALLOWED_HOSTS = ['*']
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/
 
