@@ -2,20 +2,22 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import login
 from django.http import JsonResponse
+from django.contrib.auth.forms import UserCreationForm 
 from .forms import SignupForm, RoomForm
 from .models import Room, Message
 
 
 def signup(request):
-    if request.method == "POST":
-        form = SignupForm(request.POST)
+    if request.method == 'POST':
+        form = UserCreationForm(request.POST)
         if form.is_valid():
             user = form.save()
-            login(request, user)
-            return redirect('signup') 
+            login(request, user) # Connecte l'utilisateur immédiatement
+            return redirect('index') # Redirige vers l'accueil
     else:
-        form = SignupForm()
+        form = UserCreationForm()
     return render(request, 'chat/signup.html', {'form': form})
+
 
 @login_required 
 def room_detail(request, slug):
