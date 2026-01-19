@@ -1,4 +1,5 @@
-{% load static %} <!DOCTYPE html>
+{% load static %} 
+<!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
@@ -8,14 +9,93 @@
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 
-    <!-- CSS personnalisé -->
-    <link rel="stylesheet" href="{% static 'css/style.css' %}">
-</head>
-<body class="bg-light">
+    <!-- CSS intégré -->
+    <style>
+        /* Mode nuit pour toute la page */
+        body {
+            background-color: #121212; /* fond sombre */
+            color: #ffffff;            /* texte clair */
+            font-family: Arial, sans-serif;
+        }
 
-    <header class="bg-primary text-white py-3 mb-4">
-        <div class="container text-center">
-            <h1>ZBT Chat</h1>
+        /* Titre principal ZBT Chat */
+        #main-title {
+            font-size: 36px;
+            font-weight: bold;
+            text-align: center;
+            margin: 0;
+        }
+
+        #main-title span {
+            color: #007bff; /* "Chat" en bleu */
+        }
+
+        header {
+            background-color: #1f1f1f; /* fond sombre pour header */
+            padding: 20px 0;
+        }
+
+        main {
+            margin-top: 50px;
+        }
+
+        /* Card de connexion */
+        .col-md-4 {
+            background-color: #1e1e1e; /* fond sombre pour le formulaire */
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.5);
+        }
+
+        /* Titres secondaires */
+        h3 {
+            color: #ffffff;
+        }
+
+        /* Champs de formulaire */
+        input.form-control {
+            background-color: #2a2a2a;
+            border: 1px solid #444;
+            color: #ffffff;
+        }
+
+        input.form-control::placeholder {
+            color: #aaaaaa; /* texte du placeholder gris clair */
+        }
+
+        /* Bouton */
+        .btn-primary {
+            background-color: #007bff;
+            border-color: #007bff;
+        }
+
+        .btn-primary:hover {
+            background-color: #0056b3;
+            border-color: #0056b3;
+        }
+
+        /* Footer */
+        footer {
+            background-color: #1f1f1f;
+            color: #aaaaaa;
+            margin-top: 50px;
+            padding: 15px 0;
+        }
+
+        a {
+            color: #007bff;
+        }
+
+        a:hover {
+            color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="container">
+            <h1 id="main-title">ZBT <span>Chat</span></h1>
         </div>
     </header>
 
@@ -57,7 +137,7 @@
         </div>
     </main>
 
-    <footer class="bg-light text-center py-3 mt-5 border-top">
+    <footer class="text-center">
         <small>&copy; 2026 ZBT Chat</small>
     </footer>
 
@@ -67,4 +147,3 @@
 
 </body>
 </html>
-
