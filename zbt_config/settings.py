@@ -134,4 +134,3 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 # Autoriser Vercel
 ALLOWED_HOSTS = ['.vercel.app', '127.0.0.1', 'localhost']
 
-app = application
