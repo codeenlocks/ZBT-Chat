@@ -9,6 +9,11 @@
                 {% csrf_token %}
                 {{ form.as_p }}
                 <button type="submit" class="btn btn-primary w-100">Créer mon compte</button>
+                <p> Déjà un compte ?
+                    <a href="../registration/login.html">
+                        Connectez-vous
+                    </a>
+                </p>
             </form>
         </div>
     </div>
