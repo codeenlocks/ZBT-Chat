@@ -132,5 +132,5 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 # Autoriser Vercel
-ALLOWED_HOSTS = ['.vercel.app', '127.0.0.1', 'localhost','10.39.253.77']
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', '0.0.0.0','10.39.250.212']
 

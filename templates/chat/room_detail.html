@@ -13,7 +13,7 @@
 
     <div id="chat-box" class="rounded shadow-sm p-4 mb-3" 
          style="height: 550px; overflow-y: scroll; background-color: #0c0d0e; border: 1px solid #2d3238; display: flex; flex-direction: column;">
-        </div>
+    </div>
 
     <div class="sticky-bottom p-3 border-top rounded-top" style="background-color: #131517; border-color: #2d3238 !important;">
         <div id="emoji-picker-container" style="position: absolute; bottom: 90px; right: 20px; z-index: 1000; display: none;"></div>
@@ -34,25 +34,19 @@
 </div>
 
 <style>
-    /* Bulles de messages des AUTRES */
     .message-bubble-other {
         background-color: #2b2f35 !important;
         color: #e9ecef !important;
         border: 1px solid #3e444c !important;
         border-radius: 15px 15px 15px 2px;
     }
-
-    /* MES bulles de messages */
     .message-bubble-me {
-        background-color: #0d6efd !important; /* Bleu primaire */
+        background-color: #0d6efd !important;
         color: white !important;
         border: none !important;
         border-radius: 15px 15px 2px 15px;
     }
-
     .avatar { border: 2px solid #131517; box-shadow: 0 2px 4px rgba(0,0,0,0.3); }
-
-    /* Custom Scrollbar */
     #chat-box::-webkit-scrollbar { width: 5px; }
     #chat-box::-webkit-scrollbar-track { background: #0c0d0e; }
     #chat-box::-webkit-scrollbar-thumb { background: #2b2f35; border-radius: 10px; }
@@ -63,9 +57,10 @@
 <script src="https://cdn.jsdelivr.net/npm/emoji-mart@latest/dist/browser.js"></script>
 <script>
     let lastMessageId = 0;
-    const currentUserName = "{{ user.username }}"; // On récupère le nom de l'utilisateur connecté
+    const currentUserName = "{{ user.username }}";
+    // Vérification si l'utilisateur est le créateur ou admin
+    const isRoomCreator = ("{{ room.creator.username }}" === currentUserName || "{{ user.is_staff }}" === "True");
 
-    // Émojis Mart Setup
     const pickerOptions = { 
         onEmojiSelect: (emoji) => {
             const input = document.getElementById('msg-content');
@@ -95,22 +90,40 @@
                 data.messages.forEach(msg => {
                     let isMe = (msg.user === currentUserName);
                     let firstLetter = msg.user.charAt(0).toUpperCase();
-                    
-                    // On définit les classes selon l'expéditeur
                     let alignmentClass = isMe ? 'flex-row-reverse text-end' : 'flex-row';
                     let bubbleClass = isMe ? 'message-bubble-me' : 'message-bubble-other';
                     let marginClass = isMe ? 'me-3' : 'ms-3';
 
-                    let flagHtml = msg.is_flagged ? 
-                        `<span class="badge bg-danger" style="font-size: 0.6rem;">Signalé</span>` :
-                        `<form class="d-inline flag-form" data-msg-id="${msg.id}">
-                            <input type="hidden" name="csrfmiddlewaretoken" value="${csrfToken}">
-                            <button type="submit" class="btn btn-link btn-sm p-0 text-warning text-decoration-none" style="font-size: 0.7rem;">🚩 Signaler</button>
-                            <span class="badge bg-danger d-none" style="font-size: 0.6rem;">Signalé</span>
-                        </form>`;
+                    // Logique Signalement (Becker)
+                    let flagHtml = "";
+                    if (!isMe) {
+                        if (msg.is_flagged) {
+                            flagHtml = `<span class="badge bg-danger" style="font-size: 0.6rem;">Signalé</span>`;
+                        } else {
+                            flagHtml = `
+                                <form class="d-inline flag-form" data-msg-id="${msg.id}">
+                                    <input type="hidden" name="csrfmiddlewaretoken" value="${csrfToken}">
+                                    <button type="submit" class="btn btn-link btn-sm p-0 text-warning text-decoration-none" style="font-size: 0.7rem;">🚩 Signaler</button>
+                                    <span class="badge bg-danger d-none" style="font-size: 0.6rem;">Signalé</span>
+                                </form>`;
+                        }
+                    }
+
+                    // Logique Suppression (Créateur/Admin)
+                    let deleteBtnHtml = "";
+                    if (isRoomCreator && msg.is_flagged) {
+                        deleteBtnHtml = `
+                            <form class="d-inline delete-msg-form" data-msg-id="${msg.id}">
+                                <input type="hidden" name="csrfmiddlewaretoken" value="${csrfToken}">
+                                <button type="submit" class="btn btn-link btn-sm p-0 text-danger text-decoration-none ms-2" 
+                                        style="font-size: 0.7rem;" onclick="return confirm('Supprimer ce message définitivement ?')">
+                                    <i class="bi bi-trash"></i> Supprimer
+                                </button>
+                            </form>`;
+                    }
 
                     let messageHtml = `
-                        <div class="d-flex ${alignmentClass} mb-4 animate__animated animate__fadeInUp">
+                        <div id="msg-${msg.id}" class="d-flex ${alignmentClass} mb-4 animate__animated animate__fadeInUp">
                             <div class="avatar bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" 
                                  style="width: 35px; height: 35px; min-width: 35px; font-weight: bold; font-size: 0.9rem;">${firstLetter}</div>
                             <div class="${marginClass}" style="max-width: 75%;">
@@ -121,7 +134,7 @@
                                 <div class="p-2 px-3 shadow-sm ${bubbleClass}" style="display: inline-block; text-align: left;">
                                     <p class="mb-0" style="font-size: 0.95rem; word-wrap: break-word;">${msg.content}</p>
                                 </div>
-                                <div class="mt-1">${isMe ? '' : flagHtml}</div>
+                                <div class="mt-1">${flagHtml} ${deleteBtnHtml}</div>
                             </div>
                         </div>`;
                         
@@ -135,6 +148,55 @@
             }
         });
     }
+
+    function syncModeration() {
+        let csrfToken = $('input[name=csrfmiddlewaretoken]').val();
+        $.ajax({
+            url: `/get_flagged_ids/{{ room.id }}/`, // On utilise la nouvelle vue
+            method: 'GET',
+            success: function(data) {
+                // --- 1. SUPPRESSION POUR TOUS ---
+                $('#chat-box [id^="msg-"]').each(function() {
+                    let numericId = parseInt($(this).attr('id').replace('msg-', ''));
+                    if (!data.all_ids.includes(numericId)) {
+                        $(this).addClass('animate__animated animate__fadeOut');
+                        setTimeout(() => { $(this).remove(); }, 500);
+                    }
+                });
+
+                // --- 2. APPARITION DU BOUTON ET DU BADGE ---
+                data.flagged_ids.forEach(id => {
+                    let msgDiv = $(`#msg-${id}`);
+                    
+                    // On vérifie si le message est affiché ET s'il n'a pas encore le badge signalé
+                    if (msgDiv.length && msgDiv.find('.badge.bg-danger:not(.d-none)').length === 0) {
+                        
+                        // On cache le bouton "Signaler" et on affiche le badge "Signalé"
+                        msgDiv.find('.flag-form button').addClass('d-none');
+                        msgDiv.find('.badge.bg-danger').removeClass('d-none');
+
+                        // VERIFICATION : Si l'utilisateur est le créateur, on injecte le bouton de suppression
+                        if (isRoomCreator) {
+                            // On vérifie qu'on ne l'a pas déjà ajouté pour éviter les doublons
+                            if (msgDiv.find('.delete-msg-form').length === 0) {
+                                let deleteBtnHtml = `
+                                    <form class="d-inline delete-msg-form" data-msg-id="${id}">
+                                        <input type="hidden" name="csrfmiddlewaretoken" value="${csrfToken}">
+                                        <button type="submit" class="btn btn-link btn-sm p-0 text-danger text-decoration-none ms-2" 
+                                                style="font-size: 0.7rem;" onclick="return confirm('Supprimer ce message ?')">
+                                            <i class="bi bi-trash"></i> Supprimer
+                                        </button>
+                                    </form>`;
+                                // On l'ajoute dans la zone de badges/boutons (mt-1)
+                                msgDiv.find('.mt-1').append(deleteBtnHtml);
+                            }
+                        }
+                    }
+                });
+            }
+        });
+    }
+    setInterval(syncModeration, 3000); // Vérifie toutes les 3 secondes
 
     $(document).ready(function() {
         fetchMessages();
@@ -153,6 +215,7 @@
             });
         });
 
+        // Action de signalement (Becker)
         $(document).on('submit', '.flag-form', function(e) {
             e.preventDefault();
             let form = $(this);
@@ -160,7 +223,28 @@
                 url: `/flag/${form.data('msg-id')}/`,
                 type: "POST",
                 data: { 'csrfmiddlewaretoken': form.find('input[name=csrfmiddlewaretoken]').val() },
-                success: function() { form.find('button').addClass('d-none'); form.find('.badge').removeClass('d-none'); }
+                success: function() { 
+                    form.find('button').addClass('d-none'); 
+                    form.find('.badge').removeClass('d-none'); 
+                }
+            });
+        });
+
+        // Action de suppression (Modération Créateur)
+        $(document).on('submit', '.delete-msg-form', function(e) {
+            e.preventDefault();
+            let form = $(this);
+            let msgId = form.data('msg-id');
+            let messageDiv = $(`#msg-${msgId}`);
+
+            $.ajax({
+                url: `/message/${msgId}/delete/`,
+                type: "POST",
+                data: { 'csrfmiddlewaretoken': form.find('input[name=csrfmiddlewaretoken]').val() },
+                success: function() {
+                    messageDiv.addClass('animate__fadeOutRight');
+                    setTimeout(() => { messageDiv.remove(); }, 500);
+                }
             });
         });
     });

@@ -71,13 +71,38 @@ def get_messages(request, room_id):
     results = []
     for m in messages:
         results.append({
-            'id': m.id, # Crucial pour le prochain appel !
+            'id': m.id, 
             'user': m.user.username,
             'content': m.content,
-            'timestamp': m.timestamp.strftime('%H:%M')
+            'timestamp': m.timestamp.strftime('%H:%M'),
+            'is_flagged': m.is_flagged  # <--- INDISPENSABLE : Le JS a besoin de ça !
         })
     
     return JsonResponse({'messages': results})
+
+def get_flagged_ids(request, room_id):
+    # On récupère tous les IDs des messages encore présents dans la BDD pour ce salon
+    all_ids = list(Message.objects.filter(room_id=room_id).values_list('id', flat=True))
+    # On récupère les IDs signalés
+    flagged_ids = list(Message.objects.filter(room_id=room_id, is_flagged=True).values_list('id', flat=True))
+    
+    return JsonResponse({
+        'all_ids': all_ids,
+        'flagged_ids': flagged_ids
+    })
+
+@login_required
+def delete_message(request, message_id):
+    message = get_object_or_404(Message, id=message_id)
+    room = message.room
+    
+    # Vérification : seul le créateur du salon ou un admin peut supprimer
+    if room.creator == request.user or request.user.is_staff:
+        message.delete()
+    
+    # Redirection vers la page du salon
+    return redirect('room_detail', slug=room.slug)
+
 
 @login_required
 def index(request):
@@ -90,8 +115,16 @@ def create_room(request):
     if request.method == 'POST':
         form = RoomForm(request.POST)
         if form.is_valid():
-            form.save()
-            return redirect('index') # <--- Renvoie à l'accueil automatiquement
+            # commit=False permet de créer l'objet en mémoire sans l'enregistrer tout de suite en BDD
+            room = form.save(commit=False)
+            
+            # On définit l'utilisateur actuel comme le créateur du salon
+            room.creator = request.user
+            
+            # Maintenant on enregistre définitivement l'objet en base de données
+            room.save()
+            
+            return redirect('index')
     else:
         form = RoomForm()
     return render(request, 'chat/create_room.html', {'form': form})

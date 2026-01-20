@@ -8,7 +8,7 @@ class Room(models.Model):
     # On lie le salon à l'utilisateur qui le crée
     creator = models.ForeignKey(User, on_delete=models.CASCADE, related_name='created_rooms', null=True, blank=True)
     
-    def __clstr__(self):
+    def __str__(self):
         return self.name
 
 
