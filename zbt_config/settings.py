@@ -130,5 +130,5 @@ STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 # Autoriser Vercel
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', '0.0.0.0','10.39.250.212']
+ALLOWED_HOSTS = ['zbt-chat.alwaysdata.net', 'localhost']
 
